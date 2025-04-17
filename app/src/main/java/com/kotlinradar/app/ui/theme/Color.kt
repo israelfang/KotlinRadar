@@ -1,4 +1,4 @@
-package com.example.kotlinradar.ui.theme
+package com.kotlinradar.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,4 +1,4 @@
-package com.example.kotlinradar
+package com.kotlinradar.app
 
 import org.junit.Test
 

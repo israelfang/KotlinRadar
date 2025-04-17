@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.kotlinradar"
+    namespace = "com.kotlinradar.app"
     compileSdk = 35
 
     defaultConfig {
