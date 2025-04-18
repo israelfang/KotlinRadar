@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -156,10 +157,16 @@ fun RepoListScreen(
                     val listState = rememberLazyListState()
                     val context = LocalContext.current
                     LazyColumn(
-                        state = listState, modifier = Modifier.fillMaxSize()
+                        state = listState,
+                        modifier = Modifier
+                            .testTag("repoList")
+                            .fillMaxSize()
                     ) {
                         items(reposState.value.repos) { repo ->
-                            RepoCard(repo = repo)
+                            RepoCard(
+                                repo = repo,
+                                modifier = Modifier.testTag("repoCard")
+                            )
                         }
 
                         if (reposState.value.isNextPageLoading) {
