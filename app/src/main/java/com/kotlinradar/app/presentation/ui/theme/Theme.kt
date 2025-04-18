@@ -1,4 +1,4 @@
-package com.kotlinradar.app.ui.theme
+package com.kotlinradar.app.presentation.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -11,9 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = KotlinRadarWhite,
+    secondary = KotlinRadarBlue,
+    tertiary = KotlinRadarYellow,
+    background = KotlinRadarDarkGrey,
+    surface = KotlinRadarLightGrey,
+    primaryContainer = KotlinRadarLightGrey
 )
 
 private val LightColorScheme = lightColorScheme(
