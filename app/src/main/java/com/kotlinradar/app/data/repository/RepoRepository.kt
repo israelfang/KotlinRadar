@@ -17,6 +17,12 @@ class RepoRepository(
      * @param page Page number to load (defaults to 1).
      * @return     List of [Repo] items.
      */
-    suspend fun getRepos(page: Int = 1): Response<RepoResponse> =
-        api.getRepositories(page = page)
+    suspend fun getRepos(
+        page: Int = 1,
+        perPage: Int = 15
+    ): Response<RepoResponse> =
+        api.getRepositories(
+            page = page,
+            perPage = perPage
+        )
 }

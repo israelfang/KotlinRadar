@@ -10,11 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel responsible for fetching and exposing a list of GitHub repositories.
- */
 class RepoViewModel : ViewModel() {
-
     private val repository = RepoRepository(
         api = RetrofitInstance.githubApi
     )
@@ -22,25 +18,21 @@ class RepoViewModel : ViewModel() {
     private val _repos = MutableStateFlow(KotlinReposUiState())
     val repos: StateFlow<KotlinReposUiState> = _repos
 
+    private val firstPageToBeLoaded = 1
+    private var nextPageToBeLoaded = 1
+    private var endReached = false
+
     init {
-        fetchRepos()
+        updateLoadingState(true)
+        fetchInitialRepos()
     }
 
-    /**
-     * Fetch repositories for a given page and update UI state.
-     *
-     * @param page Page number to load.
-     */
-    private fun fetchRepos(page: Int = 1) {
+    private fun fetchInitialRepos() {
         viewModelScope.launch {
-            _repos.update {
-                it.copy(
-                    isLoading = true
-                )
-            }
+            updateLoadingState(true)
 
             try {
-                val response = repository.getRepos(page)
+                val response = repository.getRepos(firstPageToBeLoaded)
                 Log.i("RepoViewModel", "response: ${response.body()}")
 
                 val items = response.body()?.items
@@ -57,19 +49,105 @@ class RepoViewModel : ViewModel() {
                                     forksCount = it.forksCount
                                 )
                             } ?: emptyList(),
-                            isLoading = false
+                            isScreenLoading = false)
+                    }
+                    nextPageToBeLoaded++
+                } else {
+                    _repos.update {
+                        it.copy(
+                            isError = true
                         )
                     }
-                } else {
-                    // TODO: handle error state (e.g., expose error StateFlow)
                 }
             } catch (e: Exception) {
-                // TODO: handle error state (e.g., expose error StateFlow)
+                _repos.update {
+                    it.copy(
+                        isError = true
+                    )
+                }
             }
         }
     }
 
+    private fun updateLoadingState(isLoading: Boolean) {
+        _repos.update {
+            it.copy(
+                isScreenLoading = isLoading
+            )
+        }
+    }
+
     fun refreshRepos() {
-        fetchRepos()
+        nextPageToBeLoaded = 1
+        endReached = false
+        _repos.update {
+            it.copy(
+                isError = false
+            )
+        }
+        fetchInitialRepos()
+    }
+
+    fun loadNextPage() {
+        if (_repos.value.isNextPageLoading || endReached) return
+
+        _repos.update {
+            it.copy(
+                isNextPageLoading = true
+            )
+        }
+
+        viewModelScope.launch {
+            try {
+                val response = repository.getRepos(nextPageToBeLoaded)
+                if (response.isSuccessful) {
+                    Log.i("RepoViewModel", "loadNextPageResponse: ${response.body()}")
+                    val newKotlinRepos = response.body()?.items?.map {
+                        KotlinRepo(
+                            name = it.name,
+                            authorName = it.owner.login,
+                            image = it.owner.avatarUrl,
+                            starGazersCount = it.stargazersCount,
+                            forksCount = it.forksCount
+                        )
+                    }
+
+                    if (newKotlinRepos.isNullOrEmpty()) {
+                        endReached = true
+                        _repos.update { currentState ->
+                            currentState.copy(
+                                isNextPageLoading = false
+                            )
+                        }
+
+                    } else {
+                        val allKotlinRepos = _repos.value.repos + newKotlinRepos
+
+                        _repos.update { currentState ->
+                            currentState.copy(
+                                repos = allKotlinRepos, isNextPageLoading = false
+                            )
+                        }
+
+                        nextPageToBeLoaded++
+                    }
+
+                } else {
+                    Log.i("RepoViewModel", "loadNextPageResponse: $response")
+                    _repos.update {
+                        it.copy(
+                            isError = true
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.i("RepoViewModel", "loadNextPageResponse: ${e.message + e.stackTrace + e.cause}")
+                _repos.update {
+                    it.copy(
+                        isError = true
+                    )
+                }
+            }
+        }
     }
 }

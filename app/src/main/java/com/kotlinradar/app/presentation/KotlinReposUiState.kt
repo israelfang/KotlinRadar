@@ -2,7 +2,9 @@ package com.kotlinradar.app.presentation
 
 data class KotlinReposUiState(
     val repos: List<KotlinRepo> = emptyList(),
-    val isLoading: Boolean = true
+    val isScreenLoading: Boolean = false,
+    val isNextPageLoading: Boolean = false,
+    val isError: Boolean = false
 )
 
 data class KotlinRepo(

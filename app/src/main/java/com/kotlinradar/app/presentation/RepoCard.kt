@@ -60,6 +60,12 @@ fun RepoCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Author: ${repo.authorName}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }

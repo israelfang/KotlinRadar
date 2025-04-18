@@ -22,6 +22,7 @@ interface GithubApi {
     suspend fun getRepositories(
         @Query("q") query: String = "language:kotlin",
         @Query("sort") sort: String = "stars",
-        @Query("page") page: Int
+        @Query("page") page: Int,
+        @Query("per_page") perPage: Int,
     ): Response<RepoResponse>
 }
