@@ -3,9 +3,6 @@ package com.kotlinradar.app.data.remote
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-/**
- * Provides a singleton Retrofit instance and the GithubApi interface.
- */
 object RetrofitInstance {
 
     private const val BASE_URL = "https://api.github.com/"

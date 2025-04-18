@@ -1,5 +1,6 @@
 package com.kotlinradar.app.presentation
 
+import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -32,10 +33,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kotlinradar.app.R
+import com.kotlinradar.app.presentation.ui.theme.kotlinCyan
+import com.kotlinradar.app.presentation.ui.theme.kotlinOrange
+import com.kotlinradar.app.presentation.ui.theme.kotlinPink
+import com.kotlinradar.app.presentation.ui.theme.kotlinPurple
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,16 +64,46 @@ fun RepoListScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Image(
-                            modifier = Modifier.size(45.dp),
+                            modifier = Modifier
+                                .padding(end = 6.dp)
+                                .size(45.dp),
                             painter = painterResource(id = R.drawable.github_logo),
                             contentDescription = null
                         )
-                        Text("KotlinRadar")
+
+                        val kotlinGradientBrush = Brush.horizontalGradient(
+                            colors = listOf(
+                                kotlinPurple,
+                                kotlinPink,
+                                kotlinOrange,
+                                kotlinCyan
+                            )
+                        )
+
+                        Text(
+                            text = "Kotlin",
+                            style = TextStyle(
+                                fontWeight = FontWeight.Bold,
+                                brush = kotlinGradientBrush,
+                                fontSize = 25.sp
+                            )
+                        )
+                        Text(
+                            text = "Radar",
+                            style = TextStyle(
+                                fontSize = 25.sp
+                            )
+                        )
+
                     }
                 })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.refreshRepos() }) {
+            FloatingActionButton(
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                onClick = { viewModel.refreshRepos() }
+            ) {
                 Icon(Icons.Default.Refresh, contentDescription = "Refresh")
             }
         }
@@ -77,7 +117,7 @@ fun RepoListScreen(
             color = MaterialTheme.colorScheme.background
         ) {
             when {
-                reposState.value.isError -> {
+                reposState.value.isInitializeFailure -> {
                     val activity = LocalActivity.current
                     AlertDialog(
                         onDismissRequest = {},
@@ -114,6 +154,7 @@ fun RepoListScreen(
 
                 else -> {
                     val listState = rememberLazyListState()
+                    val context = LocalContext.current
                     LazyColumn(
                         state = listState, modifier = Modifier.fillMaxSize()
                     ) {
@@ -132,6 +173,10 @@ fun RepoListScreen(
                                     )
                                 }
                             }
+                        }
+
+                        if (reposState.value.isNextPageFailure) {
+                            Toast.makeText(context, "Something went wrong", Toast.LENGTH_SHORT).show()
                         }
                     }
 

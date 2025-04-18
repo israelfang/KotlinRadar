@@ -12,6 +12,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             KotlinRadarTheme(
+                darkTheme = true,
                 dynamicColor = false
             ) {
                 RepoListScreen()

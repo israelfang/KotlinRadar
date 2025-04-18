@@ -14,9 +14,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 
-/**
- * Displays a single GitHub repository as a Card.
- */
 @Composable
 fun RepoCard(
     repo: KotlinRepo,

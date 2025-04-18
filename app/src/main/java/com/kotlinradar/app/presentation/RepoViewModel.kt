@@ -1,19 +1,25 @@
 package com.kotlinradar.app.presentation
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kotlinradar.app.core.Result.Error
+import com.kotlinradar.app.core.Result.Success
 import com.kotlinradar.app.data.remote.RetrofitInstance
-import com.kotlinradar.app.data.repository.RepoRepository
+import com.kotlinradar.app.data.repository.GitHubRepository
+import com.kotlinradar.app.domain.usecase.GetKotlinRepositoriesUseCase
+import com.kotlinradar.app.domain.usecase.GetKotlinRepositoriesUseCaseImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class RepoViewModel : ViewModel() {
-    private val repository = RepoRepository(
-        api = RetrofitInstance.githubApi
+class RepoViewModel(
+    private val getKotlinRepositoriesUseCase: GetKotlinRepositoriesUseCase = GetKotlinRepositoriesUseCaseImpl(
+        repository = GitHubRepository(
+            api = RetrofitInstance.githubApi
+        )
     )
+) : ViewModel() {
 
     private val _repos = MutableStateFlow(KotlinReposUiState())
     val repos: StateFlow<KotlinReposUiState> = _repos
@@ -23,24 +29,19 @@ class RepoViewModel : ViewModel() {
     private var endReached = false
 
     init {
-        updateLoadingState(true)
         fetchInitialRepos()
     }
 
     private fun fetchInitialRepos() {
         viewModelScope.launch {
-            updateLoadingState(true)
+            updateToLoadingState()
 
-            try {
-                val response = repository.getRepos(firstPageToBeLoaded)
-                Log.i("RepoViewModel", "response: ${response.body()}")
-
-                val items = response.body()?.items
-
-                if (response.isSuccessful) {
+            when (val result = getKotlinRepositoriesUseCase(firstPageToBeLoaded)) {
+                is Success -> {
+                    val items = result.data.items
                     _repos.update { currentState ->
                         currentState.copy(
-                            repos = items?.map {
+                            repos = items.map {
                                 KotlinRepo(
                                     name = it.name,
                                     authorName = it.owner.login,
@@ -48,31 +49,27 @@ class RepoViewModel : ViewModel() {
                                     starGazersCount = it.stargazersCount,
                                     forksCount = it.forksCount
                                 )
-                            } ?: emptyList(),
-                            isScreenLoading = false)
-                    }
-                    nextPageToBeLoaded++
-                } else {
-                    _repos.update {
-                        it.copy(
-                            isError = true
+                            },
+                            isScreenLoading = false
                         )
                     }
+                    nextPageToBeLoaded++
                 }
-            } catch (e: Exception) {
-                _repos.update {
-                    it.copy(
-                        isError = true
-                    )
+                is Error -> {
+                    _repos.update {
+                        it.copy(
+                            isInitializeFailure = true
+                        )
+                    }
                 }
             }
         }
     }
 
-    private fun updateLoadingState(isLoading: Boolean) {
+    private fun updateToLoadingState() {
         _repos.update {
             it.copy(
-                isScreenLoading = isLoading
+                isScreenLoading = true
             )
         }
     }
@@ -82,7 +79,8 @@ class RepoViewModel : ViewModel() {
         endReached = false
         _repos.update {
             it.copy(
-                isError = false
+                isInitializeFailure = false,
+                isNextPageFailure = false
             )
         }
         fetchInitialRepos()
@@ -93,16 +91,17 @@ class RepoViewModel : ViewModel() {
 
         _repos.update {
             it.copy(
-                isNextPageLoading = true
+                isNextPageLoading = true,
+                isNextPageFailure = false
             )
         }
 
         viewModelScope.launch {
-            try {
-                val response = repository.getRepos(nextPageToBeLoaded)
-                if (response.isSuccessful) {
-                    Log.i("RepoViewModel", "loadNextPageResponse: ${response.body()}")
-                    val newKotlinRepos = response.body()?.items?.map {
+            when (val result = getKotlinRepositoriesUseCase(nextPageToBeLoaded)) {
+                is Success -> {
+                    val items = result.data.items
+
+                    val newKotlinRepos = items.map {
                         KotlinRepo(
                             name = it.name,
                             authorName = it.owner.login,
@@ -112,7 +111,7 @@ class RepoViewModel : ViewModel() {
                         )
                     }
 
-                    if (newKotlinRepos.isNullOrEmpty()) {
+                    if (newKotlinRepos.isEmpty()) {
                         endReached = true
                         _repos.update { currentState ->
                             currentState.copy(
@@ -131,21 +130,14 @@ class RepoViewModel : ViewModel() {
 
                         nextPageToBeLoaded++
                     }
-
-                } else {
-                    Log.i("RepoViewModel", "loadNextPageResponse: $response")
+                }
+                is Error -> {
                     _repos.update {
                         it.copy(
-                            isError = true
+                            isNextPageLoading = false,
+                            isNextPageFailure = true
                         )
                     }
-                }
-            } catch (e: Exception) {
-                Log.i("RepoViewModel", "loadNextPageResponse: ${e.message + e.stackTrace + e.cause}")
-                _repos.update {
-                    it.copy(
-                        isError = true
-                    )
                 }
             }
         }
